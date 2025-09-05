@@ -1,5 +1,3 @@
-# Executa automaticamente todos os dias às 10:00 (horário UTC)
-# Para Brasil: UTC-3, então 10:00 UTC = 07:00 BRT
 on:
   schedule:
     - cron: '0 10 * * *'  # Diário às 10:00 UTC (07:00 BRT)
