@@ -1,0 +1,72 @@
+# Executa automaticamente todos os dias às 10:00 (horário UTC)
+# Para Brasil: UTC-3, então 10:00 UTC = 07:00 BRT
+on:
+  schedule:
+    - cron: '0 10 * * *'  # Diário às 10:00 UTC (07:00 BRT)
+  
+  # Permite executar manualmente também
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Modo de teste'
+        required: false
+        default: 'false'
+
+jobs:
+  generate-and-send-banners:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout do código
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Configurar Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Instalar dependências
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium webdriver-manager
+    
+    - name: 🌐 Configurar Chrome
+      uses: browser-actions/setup-chrome@latest
+      with:
+        chrome-version: stable
+    
+    - name: 🔧 Instalar ChromeDriver
+      run: |
+        python -c "
+        from webdriver_manager.chrome import ChromeDriverManager
+        from selenium import webdriver
+        ChromeDriverManager().install()
+        "
+    
+    - name: 🎯 Executar automação
+      env:
+        GERADOR_USERNAME: ${{ secrets.GERADOR_USERNAME }}
+        GERADOR_PASSWORD: ${{ secrets.GERADOR_PASSWORD }}
+      run: |
+        python automation.py
+    
+    - name: 📋 Upload dos logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: automation-logs
+        path: automation.log
+        retention-days: 30
+
+    - name: 📧 Notificação de sucesso
+      if: success()
+      run: |
+        echo "✅ Banners gerados e enviados com sucesso!"
+        echo "⏰ Executado em: $(date)"
+    
+    - name: ❌ Notificação de erro
+      if: failure()
+      run: |
+        echo "❌ Erro na automação!"
+        echo "⏰ Executado em: $(date)"
+        echo "📋 Verifique os logs para mais detalhes."
